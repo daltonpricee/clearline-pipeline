@@ -6,10 +6,26 @@
   <meta name="description" content="Clearline Pipeline — The foundation of your TVC." />
   <title>Clearline Pipeline</title>
 
-  <!-- Apple SF Pro system font stack — no import needed -->
-
   <link rel="stylesheet" href="css/reset.css" />
   <link rel="stylesheet" href="css/style.css" />
+
+  <style>
+    .hero__pulse-wrap {
+      position: relative;
+      width: 100%;
+      height: 340px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      animation: fadeIn .8s ease .7s forwards;
+    }
+    #pulse-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+  </style>
 </head>
 <body>
 
@@ -46,12 +62,12 @@
           <a href="#contact" class="btn btn--ghost">Get a Quote</a>
         </div>
       </div>
-      <div class="hero__graphic" aria-hidden="true">
-        <div class="hero__pipe hero__pipe--h"></div>
-        <div class="hero__pipe hero__pipe--v"></div>
-        <div class="hero__pipe hero__pipe--accent"></div>
-        <div class="hero__node"></div>
+
+      <!-- DATA PULSE replaces pipe graphic -->
+      <div class="hero__pulse-wrap" aria-hidden="true">
+        <canvas id="pulse-canvas"></canvas>
       </div>
+
     </div>
     <div class="hero__scroll-hint" aria-hidden="true">
       <span>Scroll</span>
@@ -117,10 +133,6 @@
   <section class="stats">
     <div class="container stats__grid">
       <div class="stat">
-        <span class="stat__number">15+</span>
-        <span class="stat__label">Years of Experience</span>
-      </div>
-      <div class="stat">
         <span class="stat__number">200+</span>
         <span class="stat__label">Projects Completed</span>
       </div>
@@ -174,5 +186,112 @@
   </footer>
 
   <script src="js/main.js"></script>
+
+  <script>
+    /* ── DATA PULSE CANVAS ── */
+    (function () {
+      const canvas = document.getElementById('pulse-canvas');
+      if (!canvas) return;
+
+      const ctx = canvas.getContext('2d');
+      let W, H, animId;
+
+      /* Waveform state */
+      const LINES = 3;
+      const waves = Array.from({ length: LINES }, (_, i) => ({
+        points: [],
+        speed:  0.012 + i * 0.005,
+        amp:    28 + i * 14,
+        freq:   0.018 - i * 0.003,
+        phase:  (i * Math.PI * 2) / LINES,
+        alpha:  0.55 - i * 0.14,
+      }));
+
+      /* Travelling pulse dot */
+      const pulse = { t: 0, speed: 0.004 };
+
+      function resize() {
+        const rect = canvas.parentElement.getBoundingClientRect();
+        W = canvas.width  = rect.width  || 480;
+        H = canvas.height = rect.height || 340;
+      }
+
+      function getHeroBackground() {
+        /* Read the actual rendered background to blend perfectly */
+        return 'rgba(37,99,235,';
+      }
+
+      function draw(ts) {
+        ctx.clearRect(0, 0, W, H);
+
+        const cx = W / 2;
+        const cy = H / 2;
+
+        /* Draw each wave line */
+        waves.forEach((w) => {
+          w.phase += w.speed;
+          ctx.beginPath();
+
+          for (let x = 0; x <= W; x += 2) {
+            const norm = (x / W) * Math.PI * 2 * 3;
+            const envelope = Math.sin((x / W) * Math.PI); /* fade at edges */
+            const y = cy + Math.sin(norm * w.freq * W + w.phase) * w.amp * envelope;
+            x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+          }
+
+          ctx.strokeStyle = `rgba(37,99,235,${w.alpha})`;
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        });
+
+        /* Travelling pulse dot along the centre wave */
+        pulse.t = (pulse.t + pulse.speed) % 1;
+        const px = pulse.t * W;
+        const norm = (pulse.t) * Math.PI * 2 * 3;
+        const envelope = Math.sin(pulse.t * Math.PI);
+        const py = cy + Math.sin(norm * waves[0].freq * W + waves[0].phase) * waves[0].amp * envelope;
+
+        /* Glow rings */
+        for (let r = 18; r >= 4; r -= 4) {
+          ctx.beginPath();
+          ctx.arc(px, py, r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(37,99,235,${0.04 + (18 - r) * 0.01})`;
+          ctx.fill();
+        }
+        /* Core dot */
+        ctx.beginPath();
+        ctx.arc(px, py, 4, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(37,99,235,0.9)';
+        ctx.fill();
+
+        /* Subtle horizontal axis line */
+        ctx.beginPath();
+        ctx.moveTo(0, cy);
+        ctx.lineTo(W, cy);
+        ctx.strokeStyle = 'rgba(37,99,235,0.08)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        /* Tick marks along axis */
+        const ticks = 8;
+        for (let i = 1; i < ticks; i++) {
+          const tx = (i / ticks) * W;
+          ctx.beginPath();
+          ctx.moveTo(tx, cy - 5);
+          ctx.lineTo(tx, cy + 5);
+          ctx.strokeStyle = 'rgba(37,99,235,0.15)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+
+        animId = requestAnimationFrame(draw);
+      }
+
+      resize();
+      window.addEventListener('resize', () => { resize(); });
+      requestAnimationFrame(draw);
+    })();
+  </script>
+
 </body>
 </html>
