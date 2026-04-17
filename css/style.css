@@ -645,9 +645,14 @@ body {
   .nav__burger {
     display: flex;
     position: absolute;
-    right: 1rem;
+    left: 1rem;
+    right: auto;
     top: 50%;
     transform: translateY(-50%);
+  }
+  .nav__logo {
+    right: 1rem;
+    left: auto;
   }
 }
 
