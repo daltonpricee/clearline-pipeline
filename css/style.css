@@ -642,7 +642,13 @@ body {
     align-items: flex-start;
   }
   .nav__links.open { display: flex; }
-  .nav__burger { display: flex; }
+  .nav__burger {
+    display: flex;
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+  }
 }
 
 @media (max-width: 480px) {
